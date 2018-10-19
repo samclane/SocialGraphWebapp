@@ -2,3 +2,5 @@ django
 gunicorn
 django_heroku
 pillow
+matplotlib
+numpy
