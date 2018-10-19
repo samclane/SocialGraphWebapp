@@ -1,7 +1,8 @@
 from django.http import HttpResponse
-from pylab import *
+from pylab import plot, xlabel, ylabel, title, grid, savefig, plt
 from io import BytesIO
 from matplotlib.figure import Figure
+import numpy as np
 
 def index(request):
     # Construct the graph
