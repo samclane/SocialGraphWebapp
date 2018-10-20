@@ -16,11 +16,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
-from graphs.views import init_svm_graphs
-
 urlpatterns = [
     path('graphs/', include('graphs.urls')),
     path('admin/', admin.site.urls),
 ]
 
-init_svm_graphs()
