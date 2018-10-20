@@ -5674,4 +5674,3 @@ timestamp,member,present
 1542123007,user7,"['user2', 'user8', 'user6']"
 1542123266,user3,"['user9', 'user4', 'user6']"
 1542123712,user0,"['user4', 'user6']"
-1542124271,user7,"['user8', 'user0']"
