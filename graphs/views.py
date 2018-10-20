@@ -4,14 +4,11 @@ from io import BytesIO
 import networkx as nx
 import pandas
 from django.http import HttpResponse
-import pylab
+from pylab import *
 from sklearn import svm
 from sklearn.metrics import roc_curve, auc
 from sklearn.model_selection import KFold, cross_val_score, train_test_split, GridSearchCV
 from sklearn.preprocessing import MultiLabelBinarizer, LabelEncoder
-
-graph = None
-roc_auc_params = (None, None, None)
 
 
 def preprocess(df: pandas.DataFrame):
@@ -23,8 +20,8 @@ def preprocess(df: pandas.DataFrame):
 
 
 def svm_param_selection(X, y, nfolds):
-    Cs = pylab.np.linspace(0.001, 10, 5)
-    gammas = pylab.np.linspace(0.01, 1, 5)
+    Cs = np.linspace(0.001, 10, 5)
+    gammas = np.linspace(0.01, 1, 5)
     param_grid = {'C': Cs, 'gamma': gammas}
     grid_search = GridSearchCV(svm.SVC(kernel='linear'), param_grid, cv=nfolds)
     grid_search.fit(X, y)
@@ -39,7 +36,7 @@ def encode_and_train(df: pandas.DataFrame):
 
     # Encode user labels as ints
     enc = LabelEncoder()
-    flat_member_list = df["member"].apply(str).append(pandas.Series(pylab.np.concatenate(df["present"]).ravel()))
+    flat_member_list = df["member"].apply(str).append(pandas.Series(np.concatenate(df["present"]).ravel()))
     enc.fit(flat_member_list)
     X, y = mlb.transform(df["present"]), enc.transform(df["member"].apply(str))
     print("Training svm...")
@@ -63,14 +60,6 @@ def get_dict_from_namefile(file):
         namemap[str(uid)] = df.loc[uid]['username']
     return namemap
 
-def plot_social_graph(social_graph, noise_floor=0):  #TODO Noise floor
-    pylab.plt.subplot(121)
-    pos = nx.circular_layout(social_graph)
-    # pos = nx.fruchterman_reingold_layout(social_graph)
-    edges, weights = zip(*[i for i in nx.get_edge_attributes(social_graph, 'weight').items() if i[1] > noise_floor])
-    nx.draw(social_graph, pos, edgelist=edges, edge_color=weights, edge_cmap=pylab.plt.get_cmap("winter"), with_labels=True,
-            arrowstyle='fancy')
-    print("Done. Showing graph.")
 
 def graph_data(binarizer: MultiLabelBinarizer, encoder: LabelEncoder, classifier, member_list, noise_floor: float = 0,
                name_file=None):
@@ -97,11 +86,18 @@ def graph_data(binarizer: MultiLabelBinarizer, encoder: LabelEncoder, classifier
         if social_graph.in_degree(weight='weight')[n] == 0 and social_graph.out_degree(weight='weight')[n] == 0:
             social_graph.remove_node(n)
 
+    plt.subplot(121)
     if name_file:
         mapping = {k: v for (k, v) in get_dict_from_namefile(name_file).items() if k in social_graph.nodes}
         nx.relabel_nodes(social_graph, mapping, copy=False)
     print("In-degree weight sums:")
     print(sorted(social_graph.in_degree(weight='weight'), key=lambda x: x[1], reverse=True))
+    pos = nx.circular_layout(social_graph)
+    # pos = nx.fruchterman_reingold_layout(social_graph)
+    edges, weights = zip(*[i for i in nx.get_edge_attributes(social_graph, 'weight').items() if i[1] > noise_floor])
+    nx.draw(social_graph, pos, edgelist=edges, edge_color=weights, edge_cmap=plt.get_cmap("winter"), with_labels=True,
+            arrowstyle='fancy')
+    print("Done. Showing graph.")
     return social_graph
 
 
@@ -122,7 +118,6 @@ def compute_roc_auc(n_classes, y_test, y_score):
 
 
 def plot_roc_auc(fpr, tpr, roc_auc):
-    plt = pylab.plt
     plt.subplot(122)
     lw = 2
     plt.plot(fpr[2], tpr[2], color='darkorange',
@@ -143,22 +138,18 @@ def init_svm_graphs():
     X, y, X_train, X_test, y_train, y_test = split_data
 
     # Generate Social Graph
-    social_graph = graph_data(mlb, enc, clf, member_list, 0, name_file=None)
+    graph = graph_data(mlb, enc, clf, member_list, 0, name_file=None)
     y_score = clf.decision_function(X_test)
     y_test = mlb.transform([[enc.inverse_transform([i])[0]] for i in y_test])
     fpr, tpr, roc_auc = compute_roc_auc(len(clf.classes_), y_test, y_score)
-
-    # Assign global variables as a side-effect
-    # TODO DIRTY HACK
-    global graph, roc_auc_params
-    graph, roc_auc_params = social_graph, (fpr, tpr, roc_auc)
+    plot_roc_auc(fpr, tpr, roc_auc)
+    plt.plot()
 
 
 def index(request):
-    plot_social_graph(graph)
-    plot_roc_auc(*roc_auc_params)
     buf = BytesIO()
-    pylab.savefig(buf, format='png')
-    pylab.close()
+    savefig(buf, format='png')
+    # plt.close(fig)
+
     response = HttpResponse(buf.getvalue(), content_type='image/png')
     return response
