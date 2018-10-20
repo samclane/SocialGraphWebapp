@@ -1,14 +1,14 @@
+from ast import literal_eval
+from io import BytesIO
+
+import networkx as nx
+import pandas
 from django.http import HttpResponse
 from pylab import *
-from io import BytesIO
-import numpy as np
-import pandas
-from ast import literal_eval
 from sklearn import svm
 from sklearn.metrics import roc_curve, auc
 from sklearn.model_selection import KFold, cross_val_score, train_test_split, GridSearchCV
 from sklearn.preprocessing import MultiLabelBinarizer, LabelEncoder
-import networkx as nx
 
 
 def preprocess(df: pandas.DataFrame):
@@ -74,7 +74,8 @@ def graph_data(binarizer: MultiLabelBinarizer, encoder: LabelEncoder, classifier
         for o in others:
             vec = binarizer.transform([[o]])
             if encoder.transform([o]) in classifier.classes_:
-                prob_map = {encoder.inverse_transform([classifier.classes_[n]])[0]: classifier.predict_proba(vec)[0][n] for
+                prob_map = {encoder.inverse_transform([classifier.classes_[n]])[0]: classifier.predict_proba(vec)[0][n]
+                            for
                             n in range(len(classifier.classes_))}
                 weight = float(prob_map[u]) * (1 + member_list.value_counts(normalize=True)[o])
             else:
@@ -129,7 +130,8 @@ def plot_roc_auc(fpr, tpr, roc_auc):
     plt.title('Receiver operating characteristic example')
     plt.legend(loc="lower right")
 
-def prep_graphs():
+
+def init_svm_graphs():
     df = pandas.read_csv('graphs/data.csv')
     df = preprocess(df)
     mlb, clf, split_data, enc, member_list = encode_and_train(df)
@@ -145,8 +147,6 @@ def prep_graphs():
 
 
 def index(request):
-    prep_graphs()
-
     buf = BytesIO()
     savefig(buf, format='png')
     # plt.close(fig)
