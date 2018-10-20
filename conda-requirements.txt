@@ -1,3 +1,6 @@
 matplotlib
 pylab
 numpy
+pandas
+sklearn
+networkx

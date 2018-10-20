@@ -4,3 +4,6 @@ django_heroku
 pillow
 matplotlib
 numpy
+pandas
+sklearn
+networkx
