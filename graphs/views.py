@@ -5,7 +5,7 @@ from django.template import loader
 from pylab import *
 
 
-def graph(request):
+def graphs(request):
     buf = BytesIO()
     savefig(buf, format='png')
     response = HttpResponse(buf.getvalue(), content_type='image/png')
