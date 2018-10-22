@@ -4,9 +4,10 @@ import networkx as nx
 import pandas
 from pylab import *
 from sklearn import svm
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_curve, auc, accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import KFold, cross_val_score, train_test_split, GridSearchCV
 from sklearn.preprocessing import MultiLabelBinarizer, LabelEncoder
+
 
 def preprocess(df: pandas.DataFrame):
     # Evaluate strings as lists
@@ -46,6 +47,11 @@ def encode_and_train(df: pandas.DataFrame):
     svc.fit(X_train, y_train)
     print(
         f"Cross-validation SVC : {cross_val_score(svc, X_test, y_test, cv=KFold(n_splits=5), n_jobs=-1)}")
+    y_metric = mlb.transform([[y] for y in enc.inverse_transform(y_test)])
+    X_metric = mlb.transform([[u] for u in enc.inverse_transform(svc.predict(X_test))])
+    print(f"Accuracy score: {accuracy_score(y_metric, X_metric)}")
+    print(f"Classification report: {classification_report(y_metric, X_metric)}")
+    print(f"Confusion Matrix: {confusion_matrix(y_test, svc.predict(X_test))}")
     print("Done.")
     return mlb, svc, (X, y, X_train, X_test, y_train, y_test), enc, flat_member_list
 
@@ -128,16 +134,54 @@ def plot_roc_auc(fpr, tpr, roc_auc):
     plt.legend(loc="lower right")
 
 
-def init_svm_graphs():
-    df = pandas.read_csv('graphs/data.csv')
+def init_svm_graphs(filename='graphs/data.csv', noise_floor=0, names=None, save_file=None):
+    if filename:
+        df = pandas.read_csv(filename)
+    else:
+        try:
+            df = pandas.read_csv('graphs/data.csv')
+        except FileNotFoundError:
+            df = pandas.read_csv('data.csv')
     df = preprocess(df)
     mlb, clf, split_data, enc, member_list = encode_and_train(df)
     X, y, X_train, X_test, y_train, y_test = split_data
 
     # Generate Social Graph
-    graph = graph_data(mlb, enc, clf, member_list, 0, name_file=None)
+    graph = graph_data(mlb, enc, clf, member_list, noise_floor, name_file=names)
     y_score = clf.decision_function(X_test)
     y_test = mlb.transform([[enc.inverse_transform([i])[0]] for i in y_test])
     fpr, tpr, roc_auc = compute_roc_auc(len(clf.classes_), y_test, y_score)
     plot_roc_auc(fpr, tpr, roc_auc)
     plt.plot()
+    # Save File
+    if save_file:
+        save_as_graphml(graph, save_file)
+
+
+if __name__ == "__main__":
+    import argparse
+
+
+    def get_args():
+        parser = argparse.ArgumentParser()
+        parser.add_argument("filename",
+                            help="Name of file in the current working directory that contains the dataframe "
+                                 "info", type=str)
+        parser.add_argument("-nf", "--noise_floor", type=float, help="Cull edges below a certain weight. Only affects "
+                                                                     "plot view.")
+        parser.add_argument("-n", "--names", help="Name of csv file mapping Discord IDs and Usernames")
+        parser.add_argument("-s", "--save_file", type=str, help="Filename to save as .graphml")
+        return parser.parse_args()
+
+
+    def save_as_graphml(graph, filename):
+        print("Saving graph...")
+        for node in graph.nodes():
+            graph.node[node]['label'] = node
+        nx.write_graphml(graph, filename)
+        print("Done.")
+
+
+    args = get_args()
+    init_svm_graphs(args.filename, args.noise_floor, args.names, args.save_file)
+    plt.show()
