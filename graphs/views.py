@@ -11,6 +11,8 @@ from mpld3.mplexporter import Exporter
 from mpld3.utils import get_id
 from pylab import re, gcf
 
+from .apps import metrics
+
 
 # Had to rewrite some lines to let ndarrays through from mpld3._display.py
 class NumpyEncoder(json.JSONEncoder):
@@ -33,7 +35,6 @@ def fig_to_html(fig, d3_url=None, mpld3_url=None, no_extras=False,
                 template_type="general", figid=None, use_http=False, **kwargs):
     template = TEMPLATE_DICT[template_type]
 
-    # TODO: allow fig to be a list of figures?
     d3_url = d3_url or urls.D3_URL
     mpld3_url = mpld3_url or urls.MPLD3_URL
 
@@ -65,12 +66,6 @@ def fig_to_html(fig, d3_url=None, mpld3_url=None, no_extras=False,
 
 
 def graphs(request):
-    """
-    buf = BytesIO()
-    savefig(buf, format='png')
-    response = HttpResponse(buf.getvalue(), content_type='image/png')
-    return response
-    """
     fig = gcf()
     html = fig_to_html(fig)
     return HttpResponse(html)
@@ -78,4 +73,4 @@ def graphs(request):
 
 def index(request):
     template = loader.get_template('graphs/index.html')
-    return HttpResponse(template.render(request=request))
+    return HttpResponse(template.render(request=request, context={'metrics': metrics}))

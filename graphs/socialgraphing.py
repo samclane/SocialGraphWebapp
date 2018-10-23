@@ -26,7 +26,7 @@ def svm_param_selection(X, y, nfolds):
     return grid_search.best_params_
 
 
-def encode_and_train(df: pandas.DataFrame):
+def encode_data(df: pandas.DataFrame):
     # Encode "present" users as OneHotVectors
     mlb = MultiLabelBinarizer()
     print("Encoding data...")
@@ -37,6 +37,10 @@ def encode_and_train(df: pandas.DataFrame):
     flat_member_list = df["member"].apply(str).append(pandas.Series(np.concatenate(df["present"]).ravel()))
     enc.fit(flat_member_list)
     X, y = mlb.transform(df["present"]), enc.transform(df["member"].apply(str))
+    return X, y, mlb, enc, flat_member_list
+
+
+def train_data(X, y, mlb, enc):
     print("Training svm...")
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.5, random_state=0, stratify=y)
     # params = svm_param_selection(X, y, 2)
@@ -45,15 +49,18 @@ def encode_and_train(df: pandas.DataFrame):
     svc = svm.SVC(C=params['C'], gamma=params['gamma'], kernel="linear", probability=True)
     # svc = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(20,), random_state=1)
     svc.fit(X_train, y_train)
-    print(
-        f"Cross-validation SVC : {cross_val_score(svc, X_test, y_test, cv=KFold(n_splits=5), n_jobs=-1)}")
-    y_metric = mlb.transform([[y] for y in enc.inverse_transform(y_test)])
-    X_metric = mlb.transform([[u] for u in enc.inverse_transform(svc.predict(X_test))])
-    print(f"Accuracy score: {accuracy_score(y_metric, X_metric)}")
-    print(f"Classification report: {classification_report(y_metric, X_metric)}")
-    print(f"Confusion Matrix: {confusion_matrix(y_test, svc.predict(X_test))}")
-    print("Done.")
-    return mlb, svc, (X, y, X_train, X_test, y_train, y_test), enc, flat_member_list
+    return svc, (X_train, X_test, y_train, y_test)
+
+
+def get_metrics(enc, mlb, clf, X, y):
+    print("Generating metrics...")
+    cross_val = f"Cross-validation:\n {cross_val_score(clf, X, y, cv=KFold(n_splits=5), n_jobs=-1)}"
+    y_metric = mlb.transform([[y] for y in enc.inverse_transform(y)])
+    X_metric = mlb.transform([[u] for u in enc.inverse_transform(clf.predict(X))])
+    accuracy = f"Accuracy score:\n {accuracy_score(y_metric, X_metric)}"
+    class_report = f"Classification report:\n {classification_report(y_metric, X_metric)}"
+    conf_matrix = f"Confusion Matrix:\n {confusion_matrix(y, clf.predict(X))}"
+    return cross_val, accuracy, class_report, conf_matrix
 
 
 def get_dict_from_namefile(file):
@@ -143,19 +150,22 @@ def init_svm_graphs(filename='graphs/data.csv', noise_floor=0, names=None, save_
         except FileNotFoundError:
             df = pandas.read_csv('data.csv')
     df = preprocess(df)
-    mlb, clf, split_data, enc, member_list = encode_and_train(df)
-    X, y, X_train, X_test, y_train, y_test = split_data
+    X, y, mlb, enc, member_list = encode_data(df)
+    clf, split_data = train_data(X, y, mlb, enc)
+    X_train, X_test, y_train, y_test = split_data
 
     # Generate Social Graph
     graph = graph_data(mlb, enc, clf, member_list, noise_floor, name_file=names)
     y_score = clf.decision_function(X_test)
-    y_test = mlb.transform([[enc.inverse_transform([i])[0]] for i in y_test])
-    fpr, tpr, roc_auc = compute_roc_auc(len(clf.classes_), y_test, y_score)
+    y_test_mlb = mlb.transform([[enc.inverse_transform([i])[0]] for i in y_test])
+    fpr, tpr, roc_auc = compute_roc_auc(len(clf.classes_), y_test_mlb, y_score)
     plot_roc_auc(fpr, tpr, roc_auc)
     plt.plot()
     # Save File
     if save_file:
         save_as_graphml(graph, save_file)
+
+    return get_metrics(enc, mlb, clf, X_test, y_test)
 
 
 if __name__ == "__main__":
