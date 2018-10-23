@@ -7,3 +7,5 @@ numpy
 pandas
 sklearn
 networkx
+Jinja2
+mpld3
