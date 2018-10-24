@@ -1,5 +1,7 @@
 from ast import literal_eval
 
+import os
+os.environ.items()  # STOP REMOVING THIS IMPORT. I USE IT I SWEAR!
 import networkx as nx
 import pandas
 from pylab import *
