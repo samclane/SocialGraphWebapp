@@ -7,11 +7,12 @@ from sklearn import svm
 from sklearn.metrics import roc_curve, auc, accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import KFold, cross_val_score, train_test_split, GridSearchCV
 from sklearn.preprocessing import MultiLabelBinarizer, LabelEncoder
+from sqlalchemy import create_engine
 
 
 def preprocess(df: pandas.DataFrame):
     # Evaluate strings as lists
-    df['present'] = df['present'].apply(literal_eval)
+    df['present'] = df['present'].apply(literal_eval).apply(list).apply(lambda x: [str(y) for y in x])
     # Remove members that only appear once
     df = df[df.groupby('member').member.transform(len) > 1].reset_index()
     return df
@@ -63,8 +64,9 @@ def get_metrics(enc, mlb, clf, X, y):
     return cross_val, accuracy, class_report, conf_matrix
 
 
-def get_dict_from_namefile(file):
-    df = pandas.read_csv(file, usecols=["member", "username"], index_col="member")
+def get_namedict_from_sql():
+    df = pandas.read_sql('SELECT * FROM member_names;', create_engine(os.environ.get('DATABASE_URL')),
+                         index_col='member')
     namemap = {}
     for uid in df.index:
         namemap[str(uid)] = df.loc[uid]['username']
@@ -97,9 +99,8 @@ def graph_data(binarizer: MultiLabelBinarizer, encoder: LabelEncoder, classifier
             social_graph.remove_node(n)
 
     plt.subplot(121)
-    if name_file:
-        mapping = {k: v for (k, v) in get_dict_from_namefile(name_file).items() if k in social_graph.nodes}
-        nx.relabel_nodes(social_graph, mapping, copy=False)
+    mapping = {k: v for (k, v) in get_namedict_from_sql().items() if k in social_graph.nodes}
+    nx.relabel_nodes(social_graph, mapping, copy=False)
     print("In-degree weight sums:")
     print(sorted(social_graph.in_degree(weight='weight'), key=lambda x: x[1], reverse=True))
     pos = nx.circular_layout(social_graph)
@@ -141,14 +142,21 @@ def plot_roc_auc(fpr, tpr, roc_auc):
     plt.legend(loc="lower right")
 
 
-def init_svm_graphs(filename='graphs/data.csv', noise_floor=0, names=None, save_file=None):
+def init_svm_graphs(filename=None, noise_floor=0, names=None, save_file=None):
     if filename:
         df = pandas.read_csv(filename)
     else:
         try:
-            df = pandas.read_csv('graphs/data.csv')
-        except FileNotFoundError:
-            df = pandas.read_csv('data.csv')
+            print("Reading from db...")
+            df = pandas.read_sql('SELECT * FROM member_data;', create_engine(os.environ.get('DATABASE_URL')),
+                                 index_col='timestamp')
+            print("Done reading.")
+        except Exception as e:
+            print("Error reading from DB {}".format(e))
+            try:
+                df = pandas.read_csv('graphs/data.csv')
+            except FileNotFoundError:
+                df = pandas.read_csv('data.csv')
     df = preprocess(df)
     X, y, mlb, enc, member_list = encode_data(df)
     clf, split_data = train_data(X, y, mlb, enc)
