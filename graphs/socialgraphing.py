@@ -1,6 +1,6 @@
+import os
 from ast import literal_eval
 
-import os
 os.environ.items()  # STOP REMOVING THIS IMPORT. I USE IT I SWEAR!
 import networkx as nx
 import pandas
@@ -47,7 +47,7 @@ def train_data(X, y, mlb, enc):
     print("Training svm...")
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.5, random_state=0, stratify=y)
     # params = svm_param_selection(X, y, 2)
-    params = {'C': 10.0, 'gamma': 0.01}
+    params = {'C': 5.0, 'gamma': 0.01}
     print(params)
     svc = svm.SVC(C=params['C'], gamma=params['gamma'], kernel="linear", probability=True)
     # svc = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(20,), random_state=1)
@@ -101,17 +101,21 @@ def graph_data(binarizer: MultiLabelBinarizer, encoder: LabelEncoder, classifier
             social_graph.remove_node(n)
 
     plt.subplot(121)
-    mapping = {k: v for (k, v) in get_namedict_from_sql().items() if k in social_graph.nodes}
+    if name_file:
+        mapping = {k: v for (k, v) in name_file.items() if k in social_graph.nodes}
+    else:
+        mapping = {k: v for (k, v) in get_namedict_from_sql().items() if k in social_graph.nodes}
     nx.relabel_nodes(social_graph, mapping, copy=False)
     print("In-degree weight sums:")
-    print(sorted(social_graph.in_degree(weight='weight'), key=lambda x: x[1], reverse=True))
+    popularity_list = sorted(social_graph.in_degree(weight='weight'), key=lambda x: x[1], reverse=True)
+    print(popularity_list)
     pos = nx.circular_layout(social_graph)
     # pos = nx.fruchterman_reingold_layout(social_graph)
     edges, weights = zip(*[i for i in nx.get_edge_attributes(social_graph, 'weight').items() if i[1] > noise_floor])
     nx.draw(social_graph, pos, edgelist=edges, edge_color=weights, edge_cmap=plt.get_cmap("winter"), with_labels=True,
             arrowstyle='fancy')
     print("Done. Showing graph.")
-    return social_graph
+    return social_graph, popularity_list
 
 
 def compute_roc_auc(n_classes, y_test, y_score):
@@ -165,7 +169,7 @@ def init_svm_graphs(filename=None, noise_floor=0, names=None, save_file=None):
     X_train, X_test, y_train, y_test = split_data
 
     # Generate Social Graph
-    graph = graph_data(mlb, enc, clf, member_list, noise_floor, name_file=names)
+    graph, popularity = graph_data(mlb, enc, clf, member_list, noise_floor, name_file=names)
     y_score = clf.decision_function(X_test)
     y_test_mlb = mlb.transform([[enc.inverse_transform([i])[0]] for i in y_test])
     fpr, tpr, roc_auc = compute_roc_auc(len(clf.classes_), y_test_mlb, y_score)
@@ -175,7 +179,7 @@ def init_svm_graphs(filename=None, noise_floor=0, names=None, save_file=None):
     if save_file:
         save_as_graphml(graph, save_file)
 
-    return get_metrics(enc, mlb, clf, X_test, y_test)
+    return (popularity,) + get_metrics(enc, mlb, clf, X_test, y_test)
 
 
 if __name__ == "__main__":

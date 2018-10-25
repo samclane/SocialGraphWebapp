@@ -1,1 +1,4 @@
-default_app_config = 'graphs.apps.GraphsConfig'
+import os
+
+if os.environ.get('RUN_MAIN', None) != 'true':
+    default_app_config = 'graphs.apps.GraphsConfig'

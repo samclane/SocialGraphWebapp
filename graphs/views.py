@@ -66,8 +66,8 @@ def fig_to_html(fig, d3_url=None, mpld3_url=None, no_extras=False,
 
 
 def graphs(request):
-    fig = gcf()
-    html = fig_to_html(fig)
+    fig = gcf()  # Get current MPL figure
+    html = fig_to_html(fig)  # Convert to D3 Graph
     return HttpResponse(html)
 
 
