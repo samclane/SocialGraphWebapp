@@ -45,7 +45,7 @@ def encode_data(df: pandas.DataFrame):
     return X, y, mlb, enc, flat_member_list
 
 
-def train_data(X, y, mlb, enc):
+def train_data(X, y):
     print("Training svm...")
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.5, random_state=0, stratify=y)
     # params = svm_param_selection(X, y, 2)
@@ -175,7 +175,7 @@ def init_svm_graphs(filename=None, noise_floor=0, names=None, save_file=None):
                 df = pandas.read_csv('data.csv')
     df = preprocess(df)
     X, y, mlb, enc, member_list = encode_data(df)
-    clf, split_data = train_data(X, y, mlb, enc)
+    clf, split_data = train_data(X, y)
     X_train, X_test, y_train, y_test = split_data
 
     # Generate Social Graph
