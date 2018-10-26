@@ -10,7 +10,7 @@
     <iframe src="{% url "graphs" %}" style="width:640px;height:500px;border:none" scrolling="no"></iframe>
     <ul>
     {% for met in metrics %}
-        <li>{{ met|linebreaks|spacify }}</li>
+        <li>{{ met|safe|linebreaks|spacify }}</li>
     {% endfor %}
     </ul>
 </body>
