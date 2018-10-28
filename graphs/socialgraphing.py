@@ -64,16 +64,16 @@ def get_metrics(enc, mlb, clf, X, y):
     cross_val = f"<h1>Cross-validation</h1>\n{cv_formatted}"
     y_metric = mlb.transform([[y] for y in enc.inverse_transform(y)])
     X_metric = mlb.transform([[u] for u in enc.inverse_transform(clf.predict(X))])
-    accuracy = f"<h1>Accuracy score</h1>\n {accuracy_score(y_metric, X_metric)}"
+    accuracy = f"<h1>Accuracy score</h1>\n{accuracy_score(y_metric, X_metric)}"
     # Dictionary magic time
     id_to_enc = dict(zip(enc.classes_, enc.transform(enc.classes_)))
     real_name_map = {**id_to_enc, **get_namedict_from_sql()}
     actual_dict = {}
     for x in id_to_enc.items():
-        actual_dict[x[1]] = real_name_map[x[0]]
-    class_report = f"<h1>Classification report</h1>\n {classification_report(y_metric, X_metric, target_names=list(actual_dict.values()))}"
+        actual_dict[x[1]] = str(real_name_map[x[0]])
+    class_report = f"<h1>Classification report</h1>\n{classification_report(y_metric, X_metric, target_names=list(actual_dict.values()))}"
     cm_formatted = '\n'.join([f"<b>{name}</b>: {line}" for name,line in zip(actual_dict.values(), confusion_matrix(y, clf.predict(X)))])
-    conf_matrix = f"<h1>Confusion Matrix</h1>\n {cm_formatted}"
+    conf_matrix = f"<h1>Confusion Matrix</h1>\n{cm_formatted}"
     return cross_val, accuracy, class_report, conf_matrix
 
 
@@ -86,7 +86,7 @@ def get_namedict_from_sql():
     return namemap
 
 
-def graph_data(binarizer: MultiLabelBinarizer, encoder: LabelEncoder, classifier, member_list, noise_floor: float = 0,
+def graph_data(binarizer: MultiLabelBinarizer, encoder: LabelEncoder, classifier, member_list, percentile: float = 0,
                name_file=None):
     print("Building graph...")
     social_graph = nx.DiGraph()
@@ -121,7 +121,7 @@ def graph_data(binarizer: MultiLabelBinarizer, encoder: LabelEncoder, classifier
     popularity_list += '\n'.join(f"<b>{str(x[0])}</b>: {str(x[1])}" for x in sorted(social_graph.in_degree(weight='weight'), key=lambda x: x[1], reverse=True))
     pos = nx.circular_layout(social_graph)
     # pos = nx.fruchterman_reingold_layout(social_graph)
-    edges, weights = zip(*[i for i in nx.get_edge_attributes(social_graph, 'weight').items() if i[1] > noise_floor])
+    edges, weights = zip(*[i for i in sorted(nx.get_edge_attributes(social_graph, 'weight').items(), key=lambda x: x[1])[int(len(nx.get_edge_attributes(social_graph, 'weight').items()) * percentile):]])
     nx.draw(social_graph, pos, edgelist=edges, edge_color=weights, edge_cmap=plt.get_cmap("winter"), with_labels=True,
             arrowstyle='fancy')
     print("Done. Showing graph.")
@@ -158,7 +158,7 @@ def plot_roc_auc(fpr, tpr, roc_auc):
     plt.legend(loc="lower right")
 
 
-def init_svm_graphs(filename=None, noise_floor=0, names=None, save_file=None):
+def init_svm_graphs(filename=None, view_percentile=0, names=None, save_file=None):
     if filename:
         df = pandas.read_csv(filename)
     else:
@@ -179,7 +179,7 @@ def init_svm_graphs(filename=None, noise_floor=0, names=None, save_file=None):
     X_train, X_test, y_train, y_test = split_data
 
     # Generate Social Graph
-    graph, popularity = graph_data(mlb, enc, clf, member_list, noise_floor, name_file=names)
+    graph, popularity = graph_data(mlb, enc, clf, member_list, view_percentile, name_file=names)
     y_score = clf.decision_function(X_test)
     y_test_mlb = mlb.transform([[enc.inverse_transform([i])[0]] for i in y_test])
     fpr, tpr, roc_auc = compute_roc_auc(len(clf.classes_), y_test_mlb, y_score)
@@ -217,5 +217,6 @@ if __name__ == "__main__":
 
 
     args = get_args()
-    init_svm_graphs(args.filename, args.noise_floor, args.names, args.save_file)
+    x = init_svm_graphs(args.filename, args.noise_floor, args.names, args.save_file)
+    print('\n--------------------\n'.join(x))
     plt.show()
