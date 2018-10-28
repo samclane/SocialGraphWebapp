@@ -1,13 +1,15 @@
 import os
 from ast import literal_eval
 
+from sklearn.neural_network import MLPClassifier
+
 os.environ.items()  # STOP REMOVING THIS IMPORT. I USE IT I SWEAR!
 import networkx as nx
 import pandas
 from pylab import *
 from sklearn import svm
 from sklearn.metrics import roc_curve, auc, accuracy_score, classification_report, confusion_matrix
-from sklearn.model_selection import KFold, cross_val_score, train_test_split, GridSearchCV
+from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split, GridSearchCV
 from sklearn.preprocessing import MultiLabelBinarizer, LabelEncoder
 from sqlalchemy import create_engine
 
@@ -45,22 +47,35 @@ def encode_data(df: pandas.DataFrame):
     return X, y, mlb, enc, flat_member_list
 
 
-def train_data(X, y):
+def build_svc(X_train, y_train):
     print("Training svm...")
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.5, random_state=0, stratify=y)
     # params = svm_param_selection(X, y, 2)
-    params = {'C': 5.0, 'gamma': 0.01}
-    print(params)
-    svc = svm.SVC(C=params['C'], gamma=params['gamma'], kernel="linear", probability=True)
-    # svc = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(20,), random_state=1)
+    # params = {'C': 5.0, 'gamma': 0.01}
+    # print(params)
+    svc = svm.SVC(C=5.0, gamma=0.01, kernel="linear", probability=True)
     svc.fit(X_train, y_train)
-    return svc, (X_train, X_test, y_train, y_test)
+    return svc
+
+
+def build_mlp(X_train, y_train):
+    print("Training perceptron...")
+    mlp = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(20,), random_state=1)
+    mlp.fit(X_train, y_train)
+    return mlp
+
+
+def train_data(X, y):
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.5, random_state=0, stratify=y)
+    # clf = build_svc(X_train, y_train)
+    clf = build_mlp(X_train, y_train)
+    return clf, (X_train, X_test, y_train, y_test)
 
 
 def get_metrics(enc, mlb, clf, X, y):
     print("Generating metrics...")
-    cv_formatted = "\n".join([f"<b>Run {n+1}</b>: {val}" for n, val in enumerate(cross_val_score(clf, X, y, cv=KFold(n_splits=5),
-                                                                                       n_jobs=-1))])
+    cv_formatted = "\n".join(
+        [f"<b>Run {n+1}</b>: {val}" for n, val in enumerate(cross_val_score(clf, X, y, cv=StratifiedKFold(n_splits=5),
+                                                                            n_jobs=-1))])
     cross_val = f"<h1>Cross-validation</h1>\n{cv_formatted}"
     y_metric = mlb.transform([[y] for y in enc.inverse_transform(y)])
     X_metric = mlb.transform([[u] for u in enc.inverse_transform(clf.predict(X))])
@@ -72,7 +87,8 @@ def get_metrics(enc, mlb, clf, X, y):
     for x in id_to_enc.items():
         actual_dict[x[1]] = str(real_name_map[x[0]])
     class_report = f"<h1>Classification report</h1>\n{classification_report(y_metric, X_metric, target_names=list(actual_dict.values()))}"
-    cm_formatted = '\n'.join([f"<b>{name}</b>: {line}" for name,line in zip(actual_dict.values(), confusion_matrix(y, clf.predict(X)))])
+    cm_formatted = '\n'.join(
+        [f"<b>{name}</b>: {line}" for name, line in zip(actual_dict.values(), confusion_matrix(y, clf.predict(X)))])
     conf_matrix = f"<h1>Confusion Matrix</h1>\n{cm_formatted}"
     return cross_val, accuracy, class_report, conf_matrix
 
@@ -118,12 +134,16 @@ def graph_data(binarizer: MultiLabelBinarizer, encoder: LabelEncoder, classifier
         mapping = {k: v for (k, v) in get_namedict_from_sql().items() if k in social_graph.nodes}
     nx.relabel_nodes(social_graph, mapping, copy=False)
     popularity_list = "<h1>Popularity List</h1>\n"
-    popularity_list += '\n'.join(f"<b>{str(x[0])}</b>: {str(x[1])}" for x in sorted(social_graph.in_degree(weight='weight'), key=lambda x: x[1], reverse=True))
-    pos = nx.circular_layout(social_graph)
-    # pos = nx.fruchterman_reingold_layout(social_graph)
-    edges, weights = zip(*[i for i in sorted(nx.get_edge_attributes(social_graph, 'weight').items(), key=lambda x: x[1])[int(len(nx.get_edge_attributes(social_graph, 'weight').items()) * percentile):]])
+    popularity_list += '\n'.join(f"<b>{str(x[0])}</b>: {str(x[1])}" for x in
+                                 sorted(social_graph.in_degree(weight='weight'), key=lambda x: x[1], reverse=True))
+    # pos = nx.circular_layout(social_graph)
+    pos = nx.fruchterman_reingold_layout(social_graph)
+    edges, weights = zip(*[i for i in
+                           sorted(nx.get_edge_attributes(social_graph, 'weight').items(), key=lambda x: x[1])[
+                           int(len(nx.get_edge_attributes(social_graph, 'weight').items()) * percentile):]])
     nx.draw(social_graph, pos, edgelist=edges, edge_color=weights, edge_cmap=plt.get_cmap("winter"), with_labels=True,
             arrowstyle='fancy')
+    plt.title('Social Graph')
     print("Done. Showing graph.")
     return social_graph, popularity_list
 
@@ -149,12 +169,12 @@ def plot_roc_auc(fpr, tpr, roc_auc):
     lw = 2
     plt.plot(fpr[2], tpr[2], color='darkorange',
              lw=lw, label='ROC curve (area = %0.2f)' % roc_auc[2])
-    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--', label="Random Guess Baseline")
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('Receiver operating characteristic example')
+    plt.title('Receiver Operating Characteristic')
     plt.legend(loc="lower right")
 
 
@@ -180,7 +200,11 @@ def init_svm_graphs(filename=None, view_percentile=0, names=None, save_file=None
 
     # Generate Social Graph
     graph, popularity = graph_data(mlb, enc, clf, member_list, view_percentile, name_file=names)
-    y_score = clf.decision_function(X_test)
+    try:
+        y_score = clf.decision_function(X_test)
+    except AttributeError:
+        print("Soft classifier found. Using predict_proba instead")
+        y_score = clf.predict_proba(X_test)
     y_test_mlb = mlb.transform([[enc.inverse_transform([i])[0]] for i in y_test])
     fpr, tpr, roc_auc = compute_roc_auc(len(clf.classes_), y_test_mlb, y_score)
     plot_roc_auc(fpr, tpr, roc_auc)

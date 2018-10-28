@@ -10,4 +10,4 @@ class GraphsConfig(AppConfig):
     def ready(self):
         print("Initializing app...")
         global metrics
-        metrics = init_svm_graphs(view_percentile=0.95)
+        metrics = init_svm_graphs(view_percentile=0.90)
