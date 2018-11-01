@@ -14,14 +14,18 @@
         text-align: center;
     }
 
-    li {
-        text-align: center;
-    }
-
     iframe {
         display: block;
         margin-left: auto;
         margin-right: auto;
+    }
+
+    dl {
+        text-align: center;
+    }
+
+    dt {
+        font-weight: bold;
     }
 </style>
 <html lang="en">
@@ -39,19 +43,36 @@
                 <a href="https://github.com/samclane/SocialGraphWebapp">here.</a>
             </p>
         </header>
-        <iframe src="{% url "graphs" %}" style="width:640px;height:500px;border:none" scrolling="no"></iframe>
-        <dl style="list-style-type:none">
-            <dt><h1>Popularity List</h1></dt>
-            <dd>{{ popularity_list|safe|linebreaks|spacify }}</dd>
-            <dt><h1>Cross Validation</h1></dt>
-            <dd>{{ cross_val|safe|linebreaks|spacify }}</dd>
-            <dt><h1>Accuracy</h1></dt>
-            <dd>{{ accuracy|safe|linebreaks|spacify }}</dd>
-            <dt><h1>Classification Report</h1></dt>
-            <dd>{{ class_report|safe|linebreaks|spacify }}</dd>
-            <dt><h1>Confusion Matrix</h1></dt>
-            <dd>{{ conf_matrix|safe|linebreaks|spacify }}</dd>
-        </dl>
+        <div class="graphs">
+            <iframe src="{% url "graphs" %}" style="width:640px;height:500px;border:none" scrolling="no"></iframe>
+        </div>
+        <div class="metrics">
+            <h1>Popularity List</h1>
+            <p class="subtitle">The popularity list is the real meat of the project. A member's "popularity" is determined by the sum of the in-degree weights.</p>
+            <p class="metric">{{ popularity_list|safe|linebreaks|spacify }}</p>
+            <h1>Cross Validation</h1>
+            <p class="subtitle">Cross-validation splits the data into training and testing sets,  and gives the % correct the classifier gets in the testing set. The data is shuffled and split 5 times.</p>
+            <p class="metric">{{ cross_val|safe|linebreaks|spacify }}</p>
+            <h1>Accuracy</h1>
+            <p class="subtitle">Accuracy is the overall percentage of labels the classifier gets right on the entire dataset.</p>
+            <p class="metric"><b>{{ accuracy|safe|linebreaks|spacify }}</b></p>
+            <h1>Classification Report</h1>
+            <p class="subtitle">The classification report gives us specific information on how the classifier fares on each class.</p>
+            <dl>
+                <dt>Precision</dt>
+                <dd>Given the classifier chooses class C, the % of times it's correct.</dd>
+                <dt>Recall</dt>
+                <dd>% of times class C is chosen correctly in the entire dataset.</dd>
+                <dt>F1-Score</dt>
+                <dd>The "harmonic mean" of Precision and Recall</dd>
+                <dt>Support</dt>
+                <dd>The number of occurrences of class C in the data.</dd>
+            </dl>
+            <p class="metric">{{ class_report|safe|linebreaks|spacify }}</p>
+            <h1>Confusion Matrix</h1>
+            <p class="subtitle">Misclassifications for each member. Currently not formatted quite well; each column in the matrix corresponds to a member, in the same order as the rows. An ideal classifier's confusion matrix would be 0 except for the principal diagonal.</p>
+            <p class="metric">{{ conf_matrix|safe|linebreaks|spacify }}</p>
+        </div>
     </div>
 </body>
 </html>
