@@ -40,11 +40,18 @@
             </p>
         </header>
         <iframe src="{% url "graphs" %}" style="width:640px;height:500px;border:none" scrolling="no"></iframe>
-        <ul style="list-style-type:none">
-        {% for met in metrics %}
-            <li>{{ met|safe|linebreaks|spacify }}</li>
-        {% endfor %}
-        </ul>
+        <dl style="list-style-type:none">
+            <dt><h1>Popularity List</h1></dt>
+            <dd>{{ popularity_list|safe|linebreaks|spacify }}</dd>
+            <dt><h1>Cross Validation</h1></dt>
+            <dd>{{ cross_val|safe|linebreaks|spacify }}</dd>
+            <dt><h1>Accuracy</h1></dt>
+            <dd>{{ accuracy|safe|linebreaks|spacify }}</dd>
+            <dt><h1>Classification Report</h1></dt>
+            <dd>{{ class_report|safe|linebreaks|spacify }}</dd>
+            <dt><h1>Confusion Matrix</h1></dt>
+            <dd>{{ conf_matrix|safe|linebreaks|spacify }}</dd>
+        </dl>
     </div>
 </body>
 </html>

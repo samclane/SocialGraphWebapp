@@ -1,8 +1,8 @@
 from django.apps import AppConfig
 
-from .socialgraphing import init_svm_graphs
+from .socialgraphing import init_svm_graphs, Metrics
 
-metrics = ()
+metrics = Metrics('EMTPY', 'EMPTY', 'EMPTY', 'EMPTY')
 
 class GraphsConfig(AppConfig):
     name = 'graphs'

@@ -73,4 +73,8 @@ def graphs(request):
 
 def index(request):
     template = loader.get_template('graphs/index.html')
-    return HttpResponse(template.render(request=request, context={'metrics': metrics}))
+    return HttpResponse(template.render(request=request, context={'popularity_list': metrics[0],
+                                                                  'cross_val': metrics[1],
+                                                                  'accuracy': metrics[2],
+                                                                  'class_report': metrics[3],
+                                                                  'conf_matrix': metrics[4]}))

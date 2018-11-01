@@ -1,4 +1,5 @@
 import os
+from collections import namedtuple
 from ast import literal_eval
 
 from sklearn.neural_network import MLPClassifier
@@ -14,12 +15,15 @@ from sklearn.preprocessing import MultiLabelBinarizer, LabelEncoder
 from sqlalchemy import create_engine
 
 
+Metrics = namedtuple('Metrics', 'cross_val accuracy class_report conf_matrix')
+
+
 def preprocess(df: pandas.DataFrame):
     # Evaluate strings as lists
     df['present'] = df['present'].apply(literal_eval).apply(list).apply(lambda x: [str(y) for y in x])
 
-    # Remove members that only appear once
-    df = df[df.groupby('member').member.transform(len) > 1].reset_index()
+    # Remove members that only appear less than 3 times
+    df = df[df.groupby('member').member.transform(len) > 5].reset_index()
 
     return df
 
@@ -73,24 +77,22 @@ def train_data(X, y):
 
 def get_metrics(enc, mlb, clf, X, y):
     print("Generating metrics...")
-    cv_formatted = "\n".join(
+    cross_val = "\n".join(
         [f"<b>Run {n+1}</b>: {val}" for n, val in enumerate(cross_val_score(clf, X, y, cv=StratifiedKFold(n_splits=5),
                                                                             n_jobs=-1))])
-    cross_val = f"<h1>Cross-validation</h1>\n{cv_formatted}"
     y_metric = mlb.transform([[y] for y in enc.inverse_transform(y)])
     X_metric = mlb.transform([[u] for u in enc.inverse_transform(clf.predict(X))])
-    accuracy = f"<h1>Accuracy score</h1>\n{accuracy_score(y_metric, X_metric)}"
+    accuracy = accuracy_score(y_metric, X_metric)
     # Dictionary magic time
     id_to_enc = dict(zip(enc.classes_, enc.transform(enc.classes_)))
     real_name_map = {**id_to_enc, **get_namedict_from_sql()}
     actual_dict = {}
     for x in id_to_enc.items():
         actual_dict[x[1]] = str(real_name_map[x[0]])
-    class_report = f"<h1>Classification report</h1>\n{classification_report(y_metric, X_metric, target_names=list(actual_dict.values()))}"
-    cm_formatted = '\n'.join(
+    class_report = classification_report(y_metric, X_metric, target_names=list(actual_dict.values()))
+    conf_matrix = '\n'.join(
         [f"<b>{name}</b>: {line}" for name, line in zip(actual_dict.values(), confusion_matrix(y, clf.predict(X)))])
-    conf_matrix = f"<h1>Confusion Matrix</h1>\n{cm_formatted}"
-    return cross_val, accuracy, class_report, conf_matrix
+    return Metrics(cross_val, accuracy, class_report, conf_matrix)
 
 
 def get_namedict_from_sql():
@@ -133,8 +135,7 @@ def graph_data(binarizer: MultiLabelBinarizer, encoder: LabelEncoder, classifier
     else:
         mapping = {k: v for (k, v) in get_namedict_from_sql().items() if k in social_graph.nodes}
     nx.relabel_nodes(social_graph, mapping, copy=False)
-    popularity_list = "<h1>Popularity List</h1>\n"
-    popularity_list += '\n'.join(f"<b>{str(x[0])}</b>: {str(x[1])}" for x in
+    popularity_list = '\n'.join(f"<b>{str(x[0])}</b>: {str(x[1])}" for x in
                                  sorted(social_graph.in_degree(weight='weight'), key=lambda x: x[1], reverse=True))
     # pos = nx.circular_layout(social_graph)
     pos = nx.fruchterman_reingold_layout(social_graph)
