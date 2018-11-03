@@ -40,6 +40,14 @@
         padding: 3px;
     }
 
+    th.conf-header {
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        max-width: 5em;
+        min-width: 5em;
+    }
+
     tr:nth-child(even) {
         background-color: #dddddd;
     }
@@ -94,7 +102,7 @@
             <p class="metric">{{ class_report|tablify_report }}</p>
             <h1>Confusion Matrix</h1>
             <p class="subtitle">Misclassifications for each member. Currently not formatted quite well; each column in the matrix corresponds to a member, in the same order as the rows. An ideal classifier's confusion matrix would be 0 except for the principal diagonal.</p>
-            <p class="metric">{{ conf_matrix|safe|linebreaks|spacify }}</p>
+            <p class="metric">{{ conf_matrix|tablify_confusion }}</p>
         </div>
     </div>
 </body>

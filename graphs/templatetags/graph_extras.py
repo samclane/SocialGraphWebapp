@@ -5,6 +5,8 @@ from django.template.defaultfilters import stringfilter
 from django.utils.html import conditional_escape
 from django.utils.safestring import mark_safe
 
+from numpy import array, int64
+
 register = Library()
 
 
@@ -51,3 +53,22 @@ def tablify_report(report: str):
 
 
 register.filter(tablify_report)
+
+@stringfilter
+def tablify_confusion(confusion):
+    confusion: dict = eval(confusion)
+    names = confusion.keys()
+    t = """<table class="center"><tr><th></th>"""
+    for n in names:
+        t += """<th class="conf-header">{}</th>""".format(n)
+    t += "</tr>"
+    for name, arr in confusion.items():
+        t += f"""<tr><td><b>{name}</b></td>"""
+        for val in arr:
+            t += f"""<td>{val}</td>"""
+        t += "</tr>"
+    t += "</table>"
+    return mark_safe(t)
+
+
+register.filter(tablify_confusion)

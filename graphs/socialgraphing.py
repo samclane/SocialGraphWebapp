@@ -90,8 +90,9 @@ def get_metrics(enc, mlb, clf, X, y):
     for x in id_to_enc.items():
         actual_dict[x[1]] = str(real_name_map[x[0]])
     class_report = classification_report(y_metric, X_metric, target_names=list(actual_dict.values()), output_dict=True)
-    conf_matrix = '\n'.join(
-        [f"<b>{name}</b>: {line}" for name, line in zip(actual_dict.values(), confusion_matrix(y, clf.predict(X)))])
+    #conf_matrix = '\n'.join(
+    #    [f"<b>{name}</b>: {line}" for name, line in zip(actual_dict.values(), confusion_matrix(y, clf.predict(X)))])
+    conf_matrix = {name: line for name, line in zip(actual_dict.values(), confusion_matrix(y, clf.predict(X)))}
     return Metrics(cross_val, accuracy, class_report, conf_matrix)
 
 
