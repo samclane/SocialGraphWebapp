@@ -7,6 +7,7 @@
     .banner {
         background: #7289da;
         color: #ffffff;
+        text-align: center;
         height: 30px;
     }
     iframe {
@@ -17,7 +18,7 @@
     }
 </style>
 <script>
-    function hide() {
+    function remove_banner() {
         document.getElementsByClassName('banner')[0].style.display = 'none';
         document.title = 'Discord Graph';
     }
@@ -28,6 +29,6 @@
 </head>
 <body>
     <div class="banner">Please wait...</div>
-    <iframe src="{% url "main" %}" onload="hide()"></iframe>
+    <iframe src="{% url "main" %}" onload="remove_banner()"></iframe>
 </body>
 </html>

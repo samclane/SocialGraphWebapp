@@ -245,5 +245,5 @@ if __name__ == "__main__":
 
     args = get_args()
     x = init_svm_graphs(args.filename, args.noise_floor, args.names, args.save_file)
-    print('\n--------------------\n'.join(x))
+    print('\n--------------------\n'.join([str(y) for y in x]))
     plt.show()
