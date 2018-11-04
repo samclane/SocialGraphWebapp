@@ -40,19 +40,21 @@ def tablify_report(report: str):
             classstring = "class=\"top-border\""
         else:
             classstring = ""
-        t += f"""<tr {classstring}>
-            <td><b>{name}</b></td>
-            <td>{metrics['precision']}</td>
-            <td>{metrics['recall']}</td>
-            <td>{metrics['f1-score']}</td>
-            <td>{metrics['support']}</td>
-        </tr>
-        """
+        if metrics['support'] > 0:
+            t += f"""<tr {classstring}>
+                <td><b>{name}</b></td>
+                <td>{metrics['precision']}</td>
+                <td>{metrics['recall']}</td>
+                <td>{metrics['f1-score']}</td>
+                <td>{metrics['support']}</td>
+            </tr>
+            """
     t += "\n</table>\n"
     return mark_safe(t)
 
 
 register.filter(tablify_report)
+
 
 @stringfilter
 def tablify_confusion(confusion):
