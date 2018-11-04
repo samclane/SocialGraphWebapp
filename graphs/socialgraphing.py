@@ -181,6 +181,7 @@ def plot_roc_auc(fpr, tpr, roc_auc):
 
 
 def init_svm_graphs(filename=None, view_percentile=0, names=None, save_file=None):
+    close('all')
     if filename:
         df = pandas.read_csv(filename)
     else:

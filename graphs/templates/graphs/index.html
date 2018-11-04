@@ -67,15 +67,17 @@
         <header>
             <h1>Discord Social Graph</h1>
             <p>
-                An ongoing study on social data collection, processing, and analysis by Sawyer McLane.<br/>
+                An ongoing study on social data collection, processing, and analysis by <a href="https://www.linkedin.com/in/samclane/">Sawyer McLane</a>.<br/>
                 Source code can be found
-                <a href="https://github.com/samclane/SocialGraphWebapp">here.</a>
+                <a href="https://github.com/samclane/SocialGraphWebapp">here.</a><br/>
+                <i><b>Notice:</b> This is purely experimental. The data displayed is the program's attempt at interpreting the data; it does not represent true social influence. The data collection methods might be flawed, the machine learning algorithms might not be finely tuned, or even accurate. But, hopefully, this data might provide some insight into the structure of larger, more active Discord communities.</i>
             </p>
         </header>
-        <div class="graphs">
+        <p class="graphs">
             <iframe src="{% url "graphs" %}" style="width:640px;height:500px;border:none" scrolling="no"></iframe>
-            <p class="subtitle">The graph on the left is the titular Discord Social Graph. Originally, the graph is a fully-connected bidirectional weighted graph. The weight from person A to person B is calculated by multiplying P<sub>1</sub> (the probability A will join the server given only person B is present) by N<sub>B</sub> (the number of times person B appears in the data). The graph is arranged according to the <a href="https://github.com/gephi/gephi/wiki/Fruchterman-Reingold">Fruchterman Reingold layout algorithm.</a><br/><hr/>
-            The graph on the right, called the Receiver Operating Characteristic (ROC) is used to determine the accuracy of a binary classifier as the classification threshold is increased. The x-axis is false-positives, that is, % of testing samples that were misclassified. The y-axis is the true-positives, the labels the classifier gets right. A perfect classifier would immediately go to 1.0 then stay there as the graph moved right. A completely random classifier would be a diagonal line (50/50 chance of getting it right). A worst-case classifier would be a flat 0.0, indicating the classifier is doing <i>worse</i> than random.</p>
+            <p class="subtitle">The graph on the left is the titular Discord Social Graph. Originally, the graph is a fully-connected bidirectional weighted graph. The weight from person A to person B is calculated by multiplying P<sub>1</sub> (the probability A will join the server given only person B is present) by N<sub>B</sub> (the number of times person B appears in the data). The graph is arranged according to the <a href="https://github.com/gephi/gephi/wiki/Fruchterman-Reingold">Fruchterman Reingold layout algorithm.</a><br/><hr/></p>
+        <p>
+            The graph on the right, called the <a href="https://en.wikipedia.org/wiki/Receiver_operating_characteristic">Receiver Operating Characteristic</a> (ROC) is used to determine the accuracy of a <a href="https://en.wikipedia.org/wiki/Binary_classification">binary classifier</a> as the classification threshold is increased. The x-axis is false-positives, that is, % of testing samples that were misclassified. The y-axis is the true-positives, the labels the classifier gets right. A perfect classifier would immediately go to 1.0 then stay there as the graph moved right. A completely random classifier would be a diagonal line (50/50 chance of getting it right). A worst-case classifier would be a flat 0.0, indicating the classifier is doing <i>worse</i> than random.</p>
         </div>
         <div class="metrics">
             <h1>Popularity List</h1>
@@ -95,7 +97,7 @@
                 <dt>Recall</dt>
                 <dd>% of times class C is chosen correctly in the entire dataset.</dd>
                 <dt>F1-Score</dt>
-                <dd>The "harmonic mean" of Precision and Recall</dd>
+                <dd>The "harmonic mean" of Precision and Recall (<a href="https://en.wikipedia.org/wiki/F1_score">Wikipedia</a>)</dd>
                 <dt>Support</dt>
                 <dd>The number of occurrences of class C in the data.</dd>
             </dl>

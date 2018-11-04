@@ -11,8 +11,7 @@ from mpld3.mplexporter import Exporter
 from mpld3.utils import get_id
 from pylab import re, gcf
 
-from .apps import metrics
-
+from .socialgraphing import init_svm_graphs
 
 # Had to rewrite some lines to let ndarrays through from mpld3._display.py
 class NumpyEncoder(json.JSONEncoder):
@@ -71,10 +70,16 @@ def graphs(request):
     return HttpResponse(html)
 
 
-def index(request):
+def main(request):
+    metrics = init_svm_graphs(view_percentile=.90)
     template = loader.get_template('graphs/index.html')
     return HttpResponse(template.render(request=request, context={'popularity_list': metrics[0],
                                                                   'cross_val': metrics[1],
                                                                   'accuracy': metrics[2],
                                                                   'class_report': metrics[3],
                                                                   'conf_matrix': metrics[4]}))
+
+
+def index(request):
+    template = loader.get_template('graphs/wrapper.html')
+    return HttpResponse(template.render(request=request))
