@@ -64,10 +64,13 @@ def tablify_confusion(confusion):
     for n in names:
         t += """<th class="conf-header">{}</th>""".format(n)
     t += "</tr>"
-    for name, arr in confusion.items():
+    for idx, (name, arr) in enumerate(confusion.items()):
         t += f"""<tr><td><b>{name}</b></td>"""
-        for val in arr:
-            t += f"""<td>{val}</td>"""
+        for idxx, val in enumerate(arr):
+            if idx == idxx:
+                t += f"""<td><b>{val}</b></td>"""
+            else:
+                t += f"""<td>{val}</td>"""
         t += "</tr>"
     t += "</table>"
     return mark_safe(t)

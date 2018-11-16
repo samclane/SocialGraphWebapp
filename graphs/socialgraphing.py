@@ -80,7 +80,7 @@ def train_data(X, y):
 def get_metrics(enc, mlb, clf, X, y):
     print("Generating metrics...")
     cross_val = "\n".join(
-        [f"<b>Run {n+1}</b>: {val}" for n, val in enumerate(cross_val_score(clf, X, y, cv=StratifiedKFold(n_splits=5),
+        [f"<b>Run {n+1}</b>: {val}" for n, val in enumerate(cross_val_score(clf, X, y, cv=StratifiedKFold(n_splits=3),
                                                                             n_jobs=-1))])
     y_metric = mlb.transform([[y] for y in enc.inverse_transform(y)])
     X_metric = mlb.transform([[u] for u in enc.inverse_transform(clf.predict(X))])
