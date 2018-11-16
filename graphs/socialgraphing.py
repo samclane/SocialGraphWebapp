@@ -70,6 +70,8 @@ def build_mlp(X_train, y_train):
 
 def train_data(X, y):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.5, random_state=0, stratify=y)
+    # If we use PCA here, clf gets better at stronger labels, worse at weaker ones. Also FSFTIWD gets popularity
+    # destroyed
     # clf = build_svc(X_train, y_train)
     clf = build_mlp(X_train, y_train)
     return clf, (X_train, X_test, y_train, y_test)
@@ -92,7 +94,7 @@ def get_metrics(enc, mlb, clf, X, y):
     class_report = classification_report(y_metric, X_metric, target_names=list(actual_dict.values()), output_dict=True)
     #conf_matrix = '\n'.join(
     #    [f"<b>{name}</b>: {line}" for name, line in zip(actual_dict.values(), confusion_matrix(y, clf.predict(X)))])
-    conf_matrix = {name: line for name, line in zip(actual_dict.values(), confusion_matrix(y, clf.predict(X)))}
+    conf_matrix = {name: line for name, line in zip([c[0] for c in class_report.items() if c[1]["support"] > 0], confusion_matrix(y, clf.predict(X)))}
     return Metrics(cross_val, accuracy, class_report, conf_matrix)
 
 
@@ -189,6 +191,8 @@ def init_svm_graphs(filename=None, view_percentile=0, names=None, save_file=None
             print("Reading from db...")
             df = pandas.read_sql('SELECT * FROM member_data;', create_engine(os.environ.get('DATABASE_URL')),
                                  index_col='timestamp')
+            if df.empty:
+                raise Exception("`member_data` returned empty frame. Something must have gone wrong with the database.")
             print("Done reading.")
         except Exception as e:
             print("Error reading from DB {}".format(e))
