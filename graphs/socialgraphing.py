@@ -159,6 +159,9 @@ def compute_roc_auc(n_classes, y_test, y_score):
     roc_auc = dict()
     for i in range(n_classes):
         fpr[i], tpr[i], _ = roc_curve(y_test[:, i], y_score[:, i])
+        # Convert nan to 0
+        np.nan_to_num(fpr[i], False)
+        np.nan_to_num(tpr[i], False)
         roc_auc[i] = auc(fpr[i], tpr[i])
 
     # Compute micro-average ROC curve and ROC area
