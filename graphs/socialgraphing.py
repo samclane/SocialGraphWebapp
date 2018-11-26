@@ -1,6 +1,6 @@
 import os
-from collections import namedtuple
 from ast import literal_eval
+from collections import namedtuple
 
 from sklearn.neural_network import MLPClassifier
 
@@ -13,7 +13,6 @@ from sklearn.metrics import roc_curve, auc, accuracy_score, classification_repor
 from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split, GridSearchCV
 from sklearn.preprocessing import MultiLabelBinarizer, LabelEncoder, label_binarize
 from sqlalchemy import create_engine
-
 
 Metrics = namedtuple('Metrics', 'cross_val accuracy class_report conf_matrix')
 
@@ -34,6 +33,7 @@ def preprocess(df: pandas.DataFrame):
 
 
 def svm_param_selection(X, y, nfolds):
+    # Grid search to find the optimal SVM params.
     Cs = np.linspace(0.001, 10, 5)
     gammas = np.linspace(0.01, 1, 5)
     param_grid = {'C': Cs, 'gamma': gammas}
@@ -68,7 +68,10 @@ def build_svc(X_train, y_train):
 
 def build_mlp(X_train, y_train):
     print("Training perceptron...")
-    mlp = MLPClassifier(solver='lbfgs')  # Using lbfgs we lose a bit of accuracy but convergence is much, much faster
+    feature_len = len(X_train[0])
+    print(f"Feature len: {feature_len}")
+    mlp = MLPClassifier(solver='lbfgs', hidden_layer_sizes=(feature_len, feature_len),
+                        random_state=42)  # Using lbfgs we lose a bit of accuracy but convergence is much, much faster
     mlp.fit(X_train, y_train)
     return mlp
 
@@ -97,9 +100,10 @@ def get_metrics(enc, mlb, clf, X, y):
     for x in id_to_enc.items():
         actual_dict[x[1]] = str(real_name_map[x[0]])
     class_report = classification_report(y_metric, X_metric, target_names=list(actual_dict.values()), output_dict=True)
-    #conf_matrix = '\n'.join(
+    # conf_matrix = '\n'.join(
     #    [f"<b>{name}</b>: {line}" for name, line in zip(actual_dict.values(), confusion_matrix(y, clf.predict(X)))])
-    conf_matrix = {name: line for name, line in zip([c[0] for c in class_report.items() if c[1]["support"] > 0], confusion_matrix(y, clf.predict(X)))}
+    conf_matrix = {name: line for name, line in zip([c[0] for c in class_report.items() if c[1]["support"] > 0],
+                                                    confusion_matrix(y, clf.predict(X)))}
     return Metrics(cross_val, accuracy, class_report, conf_matrix)
 
 
@@ -128,7 +132,7 @@ def graph_data(binarizer: MultiLabelBinarizer, encoder: LabelEncoder, classifier
                 prob_map = {encoder.inverse_transform([classifier.classes_[n]])[0]: classifier.predict_proba(vec)[0][n]
                             for
                             n in range(len(classifier.classes_))}
-                weight = float(prob_map[u])  # * (1 + member_list.value_counts(normalize=True)[o])
+                weight = float(prob_map[u])
             else:
                 weight = 0
             social_graph.add_edge(o, u, weight=weight)
@@ -137,14 +141,14 @@ def graph_data(binarizer: MultiLabelBinarizer, encoder: LabelEncoder, classifier
         if social_graph.in_degree(weight='weight')[n] == 0 and social_graph.out_degree(weight='weight')[n] == 0:
             social_graph.remove_node(n)
 
-    plt.subplot(121)
+    ax = plt.subplot(121)
     if name_file:
         mapping = {k: v for (k, v) in name_file.items() if k in social_graph.nodes}
     else:
         mapping = {k: v for (k, v) in get_namedict_from_sql().items() if k in social_graph.nodes}
     nx.relabel_nodes(social_graph, mapping, copy=False)
     popularity_list = '\n'.join(f"<b>{str(x[0])}</b>: {str(x[1])}" for x in
-                                 sorted(social_graph.in_degree(weight='weight'), key=lambda x: x[1], reverse=True))
+                                sorted(social_graph.in_degree(weight='weight'), key=lambda x: x[1], reverse=True))
     # pos = nx.circular_layout(social_graph)
     pos = nx.fruchterman_reingold_layout(social_graph)
     edges, weights = zip(*[i for i in
@@ -153,6 +157,9 @@ def graph_data(binarizer: MultiLabelBinarizer, encoder: LabelEncoder, classifier
     nx.draw(social_graph, pos, edgelist=edges, edge_color=weights, edge_cmap=plt.get_cmap("winter"), with_labels=True,
             arrowstyle='fancy')
     plt.title('Social Graph')
+    # Remove ticks
+    ax.set_xticks([])
+    ax.set_yticks([])
     print("Done. Showing graph.")
     return social_graph, popularity_list
 
@@ -178,6 +185,7 @@ def plot_roc_auc(fpr, tpr, roc_auc):
     lw = 2
     plt.plot(fpr[2], tpr[2], color='darkorange',
              lw=lw, label='ROC curve (area = %0.2f)' % roc_auc[2])
+    print(f"AUC: {roc_auc[2]}")
     plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--', label="Random Guess Baseline")
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
