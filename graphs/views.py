@@ -71,7 +71,7 @@ def graphs(request):
 
 
 def main(request):
-    metrics = init_svm_graphs(view_percentile=.90)
+    metrics = init_svm_graphs(view_percentile=.95)
     template = loader.get_template('graphs/index.html')
     return HttpResponse(template.render(request=request, context={'popularity_list': metrics[0],
                                                                   'cross_val': metrics[1],

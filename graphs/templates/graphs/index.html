@@ -75,7 +75,7 @@
         </header>
         <p class="graphs">
             <iframe src="{% url "graphs" %}" style="width:640px;height:500px;border:none" scrolling="no"></iframe>
-            <p class="subtitle">The graph on the left is the titular Discord Social Graph. Originally, the graph is a fully-connected bidirectional weighted graph. The weight from person A to person B is calculated by multiplying P<sub>1</sub> (the probability A will join the server given only person B is present) by N<sub>B</sub> (the number of times person B appears in the data). The graph is arranged according to the <a href="https://github.com/gephi/gephi/wiki/Fruchterman-Reingold">Fruchterman Reingold layout algorithm.</a><br/><hr/></p>
+            <p class="subtitle">The graph on the left is the titular Discord Social Graph. Originally, the graph is a fully-connected bidirectional weighted graph. The weight from person A to person B is the probability A will join the server given only person B is present. The graph is arranged according to the <a href="https://github.com/gephi/gephi/wiki/Fruchterman-Reingold">Fruchterman Reingold layout algorithm.</a><br/><hr/></p>
         <p>
             The graph on the right, called the <a href="https://en.wikipedia.org/wiki/Receiver_operating_characteristic">Receiver Operating Characteristic</a> (ROC) is used to determine the accuracy of a <a href="https://en.wikipedia.org/wiki/Binary_classification">binary classifier</a> as the classification threshold is increased. The x-axis is false-positives, that is, % of testing samples that were misclassified. The y-axis is the true-positives, the labels the classifier gets right. A perfect classifier would immediately go to 1.0 then stay there as the graph moved right. A completely random classifier would be a diagonal line (50/50 chance of getting it right). A worst-case classifier would be a flat 0.0, indicating the classifier is doing <i>worse</i> than random.</p>
         </div>
@@ -84,7 +84,7 @@
             <p class="subtitle">The popularity list is the real meat of the project. A member's "popularity" is determined by the sum of the in-degree weights.</p>
             <p class="metric">{{ popularity_list|safe|linebreaks|spacify }}</p>
             <h1>Cross Validation</h1>
-            <p class="subtitle">Cross-validation splits the data into training and testing sets,  and gives the % correct the classifier gets in the testing set. The data is shuffled and split 5 times.</p>
+            <p class="subtitle">Cross-validation splits the data into training and testing sets,  and gives the % correct the classifier gets in the testing set. The data is shuffled and split 3 times.</p>
             <p class="metric">{{ cross_val|safe|linebreaks|spacify }}</p>
             <h1>Accuracy</h1>
             <p class="subtitle">Accuracy is the overall percentage of labels the classifier gets right on the entire dataset.</p>

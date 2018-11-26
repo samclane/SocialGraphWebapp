@@ -2,6 +2,7 @@ import os
 from collections import namedtuple
 from ast import literal_eval
 
+from sklearn.multiclass import OneVsRestClassifier
 from sklearn.neural_network import MLPClassifier
 
 os.environ.items()  # STOP REMOVING THIS IMPORT. I USE IT I SWEAR!
@@ -22,8 +23,13 @@ def preprocess(df: pandas.DataFrame):
     # Evaluate strings as lists
     df['present'] = df['present'].apply(literal_eval).apply(list).apply(lambda x: [str(y) for y in x])
 
-    # Remove members that only appear less than 3 times
-    df = df[df.groupby('member').member.transform(len) > 5].reset_index()
+    # Remove members that only appear less than N times
+    # It's kinda interesting to see everyone on here
+    df = df[df.groupby('member').member.transform(len) > 2]  # .reset_index()
+
+    # Remove empty records
+    # Note: Doesn't seem to help
+    # df = df[df["present"].map(len) > 0]
 
     return df
 
@@ -45,7 +51,7 @@ def encode_data(df: pandas.DataFrame):
 
     # Encode user labels as ints
     enc = LabelEncoder()
-    flat_member_list = df["member"].apply(str).append(pandas.Series(np.concatenate(df["present"]).ravel()))
+    flat_member_list = mlb.classes_
     enc.fit(flat_member_list)
     X, y = mlb.transform(df["present"]), enc.transform(df["member"].apply(str))
     return X, y, mlb, enc, flat_member_list
@@ -63,13 +69,13 @@ def build_svc(X_train, y_train):
 
 def build_mlp(X_train, y_train):
     print("Training perceptron...")
-    mlp = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(20,), random_state=1)
+    mlp = MLPClassifier(hidden_layer_sizes=(20,), random_state=1, learning_rate='adaptive')
     mlp.fit(X_train, y_train)
     return mlp
 
 
 def train_data(X, y):
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.5, random_state=0, stratify=y)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.33, random_state=42)  # TODO Get this to give an instance of EVERY CLASS
     # If we use PCA here, clf gets better at stronger labels, worse at weaker ones. Also FSFTIWD gets popularity
     # destroyed
     # clf = build_svc(X_train, y_train)
@@ -123,10 +129,10 @@ def graph_data(binarizer: MultiLabelBinarizer, encoder: LabelEncoder, classifier
                 prob_map = {encoder.inverse_transform([classifier.classes_[n]])[0]: classifier.predict_proba(vec)[0][n]
                             for
                             n in range(len(classifier.classes_))}
-                weight = float(prob_map[u]) * (1 + member_list.value_counts(normalize=True)[o])
+                weight = float(prob_map[u])  # * (1 + member_list.value_counts(normalize=True)[o])
             else:
                 weight = 0
-            social_graph.add_edge(u, o, weight=weight)
+            social_graph.add_edge(o, u, weight=weight)
     # Prune useless nodes
     for n in list(social_graph.nodes):
         if social_graph.in_degree(weight='weight')[n] == 0 and social_graph.out_degree(weight='weight')[n] == 0:
@@ -154,14 +160,12 @@ def graph_data(binarizer: MultiLabelBinarizer, encoder: LabelEncoder, classifier
 
 def compute_roc_auc(n_classes, y_test, y_score):
     # Compute ROC curve and ROC area for each class
+    print("Computing AUC...")
     fpr = dict()
     tpr = dict()
     roc_auc = dict()
     for i in range(n_classes):
-        fpr[i], tpr[i], _ = roc_curve(y_test[:, i], y_score[:, i])
-        # Convert nan to 0
-        np.nan_to_num(fpr[i], False)
-        np.nan_to_num(tpr[i], False)
+        fpr[i], tpr[i], _ = roc_curve(y_test[:, i], y_score[:, i], pos_label=i)
         roc_auc[i] = auc(fpr[i], tpr[i])
 
     # Compute micro-average ROC curve and ROC area
@@ -210,11 +214,13 @@ def init_svm_graphs(filename=None, view_percentile=0, names=None, save_file=None
 
     # Generate Social Graph
     graph, popularity = graph_data(mlb, enc, clf, member_list, view_percentile, name_file=names)
+
     try:
         y_score = clf.decision_function(X_test)
     except AttributeError:
         print("Soft classifier found. Using predict_proba instead")
         y_score = clf.predict_proba(X_test)
+
     y_test_mlb = mlb.transform([[enc.inverse_transform([i])[0]] for i in y_test])
     fpr, tpr, roc_auc = compute_roc_auc(len(clf.classes_), y_test_mlb, y_score)
     plot_roc_auc(fpr, tpr, roc_auc)
