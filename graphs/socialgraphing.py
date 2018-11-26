@@ -2,7 +2,6 @@ import os
 from collections import namedtuple
 from ast import literal_eval
 
-from sklearn.multiclass import OneVsRestClassifier
 from sklearn.neural_network import MLPClassifier
 
 os.environ.items()  # STOP REMOVING THIS IMPORT. I USE IT I SWEAR!
@@ -12,7 +11,7 @@ from pylab import *
 from sklearn import svm
 from sklearn.metrics import roc_curve, auc, accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split, GridSearchCV
-from sklearn.preprocessing import MultiLabelBinarizer, LabelEncoder
+from sklearn.preprocessing import MultiLabelBinarizer, LabelEncoder, label_binarize
 from sqlalchemy import create_engine
 
 
@@ -75,7 +74,7 @@ def build_mlp(X_train, y_train):
 
 
 def train_data(X, y):
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.33, random_state=42)  # TODO Get this to give an instance of EVERY CLASS
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.33, random_state=42, stratify=y)
     # If we use PCA here, clf gets better at stronger labels, worse at weaker ones. Also FSFTIWD gets popularity
     # destroyed
     # clf = build_svc(X_train, y_train)
@@ -165,7 +164,7 @@ def compute_roc_auc(n_classes, y_test, y_score):
     tpr = dict()
     roc_auc = dict()
     for i in range(n_classes):
-        fpr[i], tpr[i], _ = roc_curve(y_test[:, i], y_score[:, i], pos_label=i)
+        fpr[i], tpr[i], _ = roc_curve(y_test[:, i], y_score[:, i])
         roc_auc[i] = auc(fpr[i], tpr[i])
 
     # Compute micro-average ROC curve and ROC area
@@ -221,8 +220,8 @@ def init_svm_graphs(filename=None, view_percentile=0, names=None, save_file=None
         print("Soft classifier found. Using predict_proba instead")
         y_score = clf.predict_proba(X_test)
 
-    y_test_mlb = mlb.transform([[enc.inverse_transform([i])[0]] for i in y_test])
-    fpr, tpr, roc_auc = compute_roc_auc(len(clf.classes_), y_test_mlb, y_score)
+    y_test_onehot = label_binarize(y_test, clf.classes_)
+    fpr, tpr, roc_auc = compute_roc_auc(len(clf.classes_), y_test_onehot, y_score)
     plot_roc_auc(fpr, tpr, roc_auc)
     plt.plot()
     # Save File
