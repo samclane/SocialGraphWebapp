@@ -68,13 +68,13 @@ def build_svc(X_train, y_train):
 
 def build_mlp(X_train, y_train):
     print("Training perceptron...")
-    mlp = MLPClassifier(hidden_layer_sizes=(20,), random_state=1, learning_rate='adaptive')
+    mlp = MLPClassifier(solver='lbfgs')  # Using lbfgs we lose a bit of accuracy but convergence is much, much faster
     mlp.fit(X_train, y_train)
     return mlp
 
 
 def train_data(X, y):
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.33, random_state=42, stratify=y)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.50, random_state=42, stratify=y)
     # If we use PCA here, clf gets better at stronger labels, worse at weaker ones. Also FSFTIWD gets popularity
     # destroyed
     # clf = build_svc(X_train, y_train)
@@ -168,8 +168,7 @@ def compute_roc_auc(n_classes, y_test, y_score):
         roc_auc[i] = auc(fpr[i], tpr[i])
 
     # Compute micro-average ROC curve and ROC area
-    min_len = min(len(y_test.ravel()), len(y_score.ravel()))
-    fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel()[:min_len], y_score.ravel()[:min_len])
+    fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(), y_score.ravel())
     roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
     return fpr, tpr, roc_auc
 
