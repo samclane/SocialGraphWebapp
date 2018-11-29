@@ -70,7 +70,7 @@ def build_mlp(X_train, y_train):
     print("Training perceptron...")
     feature_len = len(X_train[0])
     print(f"Feature len: {feature_len}")
-    mlp = MLPClassifier(solver='lbfgs', hidden_layer_sizes=(feature_len, feature_len),
+    mlp = MLPClassifier(solver='lbfgs', hidden_layer_sizes=(feature_len,),
                         random_state=42)  # Using lbfgs we lose a bit of accuracy but convergence is much, much faster
     mlp.fit(X_train, y_train)
     return mlp

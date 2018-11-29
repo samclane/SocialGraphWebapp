@@ -6,6 +6,7 @@ from django.utils.html import conditional_escape
 from django.utils.safestring import mark_safe
 
 from numpy import array, int64
+array([]);int64()  # Keep the import
 
 register = Library()
 
