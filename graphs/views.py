@@ -10,8 +10,12 @@ from mpld3.mpld3renderer import MPLD3Renderer
 from mpld3.mplexporter import Exporter
 from mpld3.utils import get_id
 from pylab import re, gcf
+from rq import Queue
 
 from .socialgraphing import init_svm_graphs
+from worker import conn
+
+metrics = None
 
 # Had to rewrite some lines to let ndarrays through from mpld3._display.py
 class NumpyEncoder(json.JSONEncoder):
@@ -71,15 +75,23 @@ def graphs(request):
 
 
 def main(request):
-    metrics = init_svm_graphs(view_percentile=.95)
-    template = loader.get_template('graphs/index.html')
-    return HttpResponse(template.render(request=request, context={'popularity_list': metrics[0],
-                                                                  'cross_val': metrics[1],
-                                                                  'accuracy': metrics[2],
-                                                                  'class_report': metrics[3],
-                                                                  'conf_matrix': metrics[4]}))
+    global metrics
+    if not metrics.is_finished:
+        return index(request)
+    else:
+        template = loader.get_template('graphs/index.html')
+        return HttpResponse(template.render(request=request, context={'popularity_list': metrics[0],
+                                                                      'cross_val': metrics[1],
+                                                                      'accuracy': metrics[2],
+                                                                      'class_report': metrics[3],
+                                                                      'conf_matrix': metrics[4]}))
 
 
 def index(request):
+    global metrics
+    q = Queue(connection=conn)
+    metrics = q.enqueue(init_svm_graphs, kwargs={'view_percentile': .95})
     template = loader.get_template('graphs/wrapper.html')
     return HttpResponse(template.render(request=request))
+
+

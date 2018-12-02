@@ -10,3 +10,4 @@ networkx
 Jinja2
 mpld3
 sqlalchemy
+rq
