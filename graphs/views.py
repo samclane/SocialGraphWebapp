@@ -89,8 +89,9 @@ def main(request):
 
 def index(request):
     global metrics
-    q = Queue(connection=conn)
-    metrics = q.enqueue(init_svm_graphs, kwargs={'view_percentile': .95})
+    if not metrics:
+        q = Queue(connection=conn)
+        metrics = q.enqueue(init_svm_graphs, kwargs={'view_percentile': .95})
     template = loader.get_template('graphs/wrapper.html')
     return HttpResponse(template.render(request=request))
 
