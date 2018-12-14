@@ -22,6 +22,12 @@
         document.getElementsByClassName('banner')[0].style.display = 'none';
         document.title = 'Discord Graph';
     }
+    setTimeout(function() {
+        remove_banner();
+        window.location.reload(2);
+        remove_banner();
+    }, 2000);
+    remove_banner();
 </script>
 <head>
     <meta charset="UTF-8">
@@ -29,6 +35,6 @@
 </head>
 <body>
     <div class="banner">Please wait...</div>
-    <iframe src="{% url "main" %}" onload="remove_banner()"></iframe>
+    <iframe src="{% url "index" %}"></iframe>
 </body>
 </html>

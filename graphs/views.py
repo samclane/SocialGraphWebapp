@@ -69,22 +69,10 @@ def fig_to_html(fig, d3_url=None, mpld3_url=None, no_extras=False,
 
 
 def graphs(request):
-    fig = gcf()  # Get current MPL figure
+    global metrics
+    fig = metrics.result[5]
     html = fig_to_html(fig)  # Convert to D3 Graph
     return HttpResponse(html)
-
-
-def main(request):
-    global metrics
-    if not metrics.is_finished:
-        return index(request)
-    else:
-        template = loader.get_template('graphs/index.html')
-        return HttpResponse(template.render(request=request, context={'popularity_list': metrics[0],
-                                                                      'cross_val': metrics[1],
-                                                                      'accuracy': metrics[2],
-                                                                      'class_report': metrics[3],
-                                                                      'conf_matrix': metrics[4]}))
 
 
 def index(request):
@@ -92,7 +80,14 @@ def index(request):
     if not metrics:
         q = Queue(connection=conn)
         metrics = q.enqueue(init_svm_graphs, kwargs={'view_percentile': .95})
-    template = loader.get_template('graphs/wrapper.html')
-    return HttpResponse(template.render(request=request))
-
+    if not metrics.is_finished:
+        template = loader.get_template('graphs/wrapper.html')
+        return HttpResponse(template.render(request=request))
+    else:
+        template = loader.get_template('graphs/index.html')
+        return HttpResponse(template.render(request=request, context={'popularity_list': metrics.result[0],
+                                                                      'cross_val': metrics.result[1],
+                                                                      'accuracy': metrics.result[2],
+                                                                      'class_report': metrics.result[3],
+                                                                      'conf_matrix': metrics.result[4]}))
 

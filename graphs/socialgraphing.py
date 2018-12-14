@@ -235,7 +235,7 @@ def init_svm_graphs(filename=None, view_percentile=0, names=None, save_file=None
     if save_file:
         save_as_graphml(graph, save_file)
 
-    return (popularity,) + get_metrics(enc, mlb, clf, X_test, y_test)
+    return (popularity,) + get_metrics(enc, mlb, clf, X_test, y_test) + (gcf(),)
 
 
 if __name__ == "__main__":

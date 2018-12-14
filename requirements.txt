@@ -11,3 +11,4 @@ Jinja2
 mpld3
 sqlalchemy
 rq
+redis
