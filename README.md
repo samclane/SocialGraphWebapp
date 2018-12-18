@@ -2,6 +2,8 @@
 
 https://infinite-sands-83078.herokuapp.com/
 
+Please be patient, I'm using a free-tier Heroku account, so it's very slow to initially respond and to load. You may have to wait around a minute.
+
 ### Intro
 
 DiscordSocialGraph is my first original Machine Learning project. Originally, I set out to create a Discord bot that would predict the next user to join the server. However, that revealed a more interesting prospect: who is the most popular person on our server? This is an inversion of the original question: which user has the most "draw" to get users to join the server. 
@@ -9,30 +11,26 @@ DiscordSocialGraph is my first original Machine Learning project. Originally, I 
 I started by creating an [addon](https://github.com/samclane/Snake-Cogs/blob/master/member_logger/member_logger.py) to the existing Discord Bot framework that I use ([RedBot](https://github.com/Cog-Creators/Red-DiscordBot)). I wanted to collect as little information as possible (to start simple), so all this module does is log 2 things:
 
 
-1. When a user joins a voice channel, it logs the users in the room before they join
+1. When a user joins a voice channel, it logs the user IDs of the members already in the channel. 
 
 2. When a user mentions another using `@`
 
 Here's what that file looks like:
 ```
 timestamp,member,present
-1538687523,194186827534565376,['96323575752962048']
-1538687586,196282763555373056,['89841631116681216']
-1538698858,89841631116681216,['196282763555373056']
-1538703180,96323575752962048,['196282763555373056']
-1538703183,194186827534565376,"['196282763555373056', '96323575752962048']"
-1538703206,96323575752962048,['202214049117634561']
-1538703212,194186827534565376,['202214049117634561']
-1538703220,202214049117634561,"['196282763555373056', '96323575752962048', '194186827534565376']"
-1538704948,90666704429907968,"['196282763555373056', '96323575752962048', '202214049117634561', '194186827534565376']"
-1538704984,90666704429907968,"['196282763555373056', '96323575752962048', '202214049117634561', '194186827534565376']"
-1538705291,89841631116681216,"['196282763555373056', '96323575752962048', '202214049117634561', '194186827534565376']"
-1538705800,213153711298576394,"['196282763555373056', '96323575752962048', '202214049117634561', '194186827534565376', '89841631116681216']"
-1538706849,90666704429907968,"['196282763555373056', '96323575752962048', '194186827534565376', '89841631116681216']"
-1538709122,90666704429907968,"['196282763555373056', '96323575752962048', '89841631116681216', '194186827534565376']"
-1538712399,202212999509835776,['196282763555373056']
-1538759080,202212999509835776,[]
+1539291278,user3,"['user8', 'user1', 'user0', 'user7', 'user4', 'user6']"
+1539291514,user1,"['user5', 'user0', 'user4', 'user2', 'user7', 'user8', 'user9', 'user6']"
+1539292425,user0,"['user7', 'user5', 'user3', 'user9', 'user4']"
+1539293267,user3,"['user4', 'user0', 'user2', 'user7', 'user6']"
+1539293442,user9,['user8']
+1539293609,user3,"['user6', 'user0', 'user7', 'user4']"
+1539293634,user3,"['user0', 'user6', 'user5', 'user8']"
+1539293848,user9,"['user6', 'user4', 'user0', 'user7']"
+1539294307,user9,"['user6', 'user1', 'user0']"
+1539294408,user6,"['user1', 'user4', 'user0', 'user7', 'user5', 'user2']"
+1539295361,user6,"['user0', 'user1', 'user4', 'user3', 'user9', 'user2']"
 ```
+<sup>Note: User IDs have been changed to userX for readability</sup>
 
 The bot collects this information and uploads it to a remote PostgresSQL server. 
 
@@ -40,13 +38,15 @@ The list of all users with interactions on the server is kept as a one-hot vecto
 
 ![](https://i.imgur.com/tVC6XqZ.png)
 
+<sup>Note: This graph uses the [Fruchterman Reingold layout algorithm](https://github.com/gephi/gephi/wiki/Fruchterman-Reingold) which tries to display the Graph in a spatially meaningful way. Unfortunately that doesn't always work.</sup>
+
 The "popularity" or "draw" of the user is the sum of the weights of all the in-degree weights. Currently, this correlates pretty heavily with the number of instances that user appears in the dataset, but not exactly, meaning that some special relationships are being discovered. For example, it's noticed that `watersnake_test`, my test account, exclusively when I'm already in the server (I only use it when I need to simulate another user besides myself). However, the algorithm can sometimes overfit, drawing strong bonds between my test-account and other accounts I'm actually friends with. It's interesting to try and see the model try and discover who's friends with who. 
 
 Three different models were used in the development of this project:
 
-1. Naive Bayes 
-2. Support Vector Machine
-3. Multilayer Perceptron
+1. Naive Bayes (`sklearn.naive_bayes.GaussianNB`)
+2. Support Vector Machine (`sklearn.svm.SVC`)
+3. Multilayer Perceptron (`sklearn.neural_network.MLPClassifier`)
 
 Currently, model #3, the MLP, gives the most accurate results. The accuracy of the model is quantified by the area under the Receiver Operating Characteristic curve. 
 
